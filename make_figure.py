@@ -1,20 +1,4 @@
 #!/usr/bin/env python3
-"""
-Build Figure 1 from results/decomposition.csv.
-
-    python make_figure.py --results results --out figures
-
-Writes figures/fig1_mcb_dsc.pdf (and .png). Run analyze.py with
---level-removed first so decomposition.csv holds the residualised numbers the
-caption describes.
-
-Design choices, all deliberate:
-  * equal x/y scaling, so the slope-one iso-CRPS diagonals actually render at
-    45 degrees -- the caption claims this, so it has to be true;
-  * only the models involved in a highlighted comparison are labelled, the rest
-    are small dots, because a legible figure beats a complete one;
-  * two callouts carrying the paper's two visual claims.
-"""
 
 import argparse
 import csv
@@ -60,9 +44,7 @@ def load(path):
 
 
 def panel(ax, rows, title, highlight, callout, baseline):
-    """One configuration. Equal aspect, so the slope-one diagonals render at 45
-    degrees; the baseline is excluded from the frame because it is a far outlier
-    that would compress every TSFM into a single dot."""
+
     if not rows:
         ax.set_visible(False)
         return
