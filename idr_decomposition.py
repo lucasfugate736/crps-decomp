@@ -1,34 +1,4 @@
-"""
-Isotonicity-based CRPS decomposition (Arnold, Walz, Ziegel & Gneiting, EJS 2024)
-with the three corrections requested in review:
 
-  (1) exact IDR under the STOCHASTIC ORDER, so the E2 nonnegativity guarantee
-      (MCB >= 0, DSC >= 0) actually holds -- plus the median TOTAL ORDER
-      approximation, so the two can be compared directly;
-  (2) K-fold CROSS-FITTING, to remove the in-sample optimism floor;
-  (3) BLOCK BOOTSTRAP over series/windows, for confidence intervals that
-      respect dependence across horizon steps.
-
-Conventions
------------
-Forecasts are m-member quantile ensembles, shape (n, m), columns ascending.
-They are treated as the discrete uniform distribution on their m atoms, which
-is exactly how the paper scores them.
-
-CRPS is computed by direct integration of the step-function CDF,
-    CRPS(F, y) = \\int (F(z) - 1{y <= z})^2 dz,
-which for a discrete distribution is exact (no Monte Carlo, no approximation)
-and coincides with the usual NRG ensemble estimator for equal weights.
-
-Order conventions
------------------
-IDR fits, for each threshold z, an ANTITONE regression of 1{y_i <= z} on the
-forecasts: if forecast i is stochastically smaller than forecast j, then the
-fitted CDF at i must be >= the fitted CDF at j. Solved exactly:
-  * total order      -> PAVA (scipy), O(n log n) per threshold;
-  * stochastic order -> isotonic regression on the componentwise-dominance DAG,
-    solved exactly by maximum-closure / min-cut divide-and-conquer.
-"""
 
 from __future__ import annotations
 
@@ -224,22 +194,13 @@ def _isotonic_dag(a: np.ndarray, src: np.ndarray, dst: np.ndarray) -> np.ndarray
 # --------------------------------------------------------------------------
 def _idr_cdf(fc: np.ndarray, y: np.ndarray, thresholds: np.ndarray,
              order: str) -> np.ndarray:
-    """
-    Fit IDR and return the (n, T) matrix of fitted CDF values.
 
-    order='median'     -> total order induced by the forecast median (fast,
-                          NO nonnegativity guarantee -- Arnold et al. App. C);
-    order='stochastic' -> exact componentwise order (guarantee holds).
-    """
     n = fc.shape[0]
     cdf = np.empty((n, thresholds.size), float)
 
     if order == "median":
         key = np.median(fc, axis=1)
-        # Tied forecasts must receive the SAME fitted value. Breaking ties by
-        # sort position would impose a spurious chain on incomparable cases and
-        # let IDR fit noise along it -- inflating both MCB and DSC. Pool ties
-        # into weighted groups before running PAVA.
+
         uniq, inv = np.unique(key, return_inverse=True)
         w = np.bincount(inv).astype(float)
         for t, z in enumerate(thresholds):
@@ -263,17 +224,7 @@ def _idr_cdf(fc: np.ndarray, y: np.ndarray, thresholds: np.ndarray,
 
 def _predict_idr(fc_tr: np.ndarray, cdf_tr: np.ndarray, fc_te: np.ndarray,
                  order: str) -> np.ndarray:
-    """
-    Out-of-sample IDR prediction.
 
-    Total order: the fitted CDF is a monotone step function of the ordering key,
-    so a new case is placed by linear interpolation between its two neighbouring
-    training keys -- the standard monotone-interpolation rule.
-
-    Partial order: the fitted CDF is antitone, so a new case x is bracketed by
-        max{F_j : x <= x_j}  <=  F(x)  <=  min{F_i : x_i <= x},
-    and we take the midpoint of that bracket.
-    """
     tr = np.sort(np.asarray(fc_tr, float), axis=1)
     te = np.sort(np.asarray(fc_te, float), axis=1)
 
@@ -336,13 +287,7 @@ def _thresholds(y: np.ndarray, max_thresholds: int | None) -> np.ndarray:
 
 def decompose(fc: np.ndarray, y: np.ndarray, order: str = "stochastic",
               max_thresholds: int | None = 400) -> Decomposition:
-    """
-    In-sample decomposition  CRPS = MCB - DSC + UNC.
 
-    WARNING: with order='median' the nonnegativity of MCB and DSC is NOT
-    guaranteed (Arnold et al. 2024, Appendix C). Negative components are a
-    symptom of the approximation, not a rounding artefact.
-    """
     fc = np.asarray(fc, float)
     y = np.asarray(y, float)
     t = _thresholds(y, max_thresholds)
@@ -361,14 +306,7 @@ def decompose_cross_fit(fc: np.ndarray, y: np.ndarray, order: str = "stochastic"
                         k: int = 5, seed: int = 0,
                         max_thresholds: int | None = 400,
                         groups: np.ndarray | None = None) -> Decomposition:
-    """
-    K-fold cross-fitted decomposition. IDR is fit on K-1 folds and the
-    recalibrated forecast is scored out of fold, which removes the in-sample
-    optimism that otherwise puts a positive floor under MCB.
 
-    `groups` (e.g. series or window id) keeps all cases from one series in the
-    same fold, so the folds are genuinely independent.
-    """
     fc = np.asarray(fc, float)
     y = np.asarray(y, float)
     n = y.size
@@ -405,17 +343,7 @@ def block_bootstrap(fc: np.ndarray, y: np.ndarray, groups: np.ndarray,
                     b: int = 1000, order: str = "stochastic", seed: int = 0,
                     cross_fit: bool = False, level: float = 0.95,
                     max_thresholds: int | None = 400) -> dict:
-    """
-    Paired block bootstrap over `groups` (series or windows).
 
-    The IDR fit is made ONCE on the full sample and held fixed; each resample
-    re-averages the per-case scores. Refitting IDR on a resample would let it
-    exploit the duplicated cases that sampling with replacement creates, driving
-    CRPS_iso down and inflating both MCB and DSC -- an artefact of the
-    resampling scheme, not sampling variability. The price is that these
-    intervals condition on the fitted recalibration map: they capture
-    variability in the outcomes, not in the fit.
-    """
     fc = np.asarray(fc, float)
     y = np.asarray(y, float)
     groups = np.asarray(groups)
