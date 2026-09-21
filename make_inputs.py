@@ -1,22 +1,5 @@
 #!/usr/bin/env python3
-"""
-Turn whatever you already have into the .npz files rerun_experiments.py expects,
-and check them before you spend pod hours on bad input.
 
-    python make_inputs.py --check forecasts/          # validate what's there
-    python make_inputs.py --from-parquet raw/ --out forecasts/
-
-The target format, one file per (dataset, model), named <dataset>__<model>.npz:
-
-    fc      float (n, 9)   quantile forecasts, levels 0.1..0.9, ASCENDING
-    y       float (n,)     realised target
-    series  int   (n,)     series or window id -- the bootstrap block
-    step    int   (n,)     horizon step, 1-based
-
-fc and y must already be MASE-scaled and level-removed, exactly as you score
-them now. Do the scaling upstream, not here, so the decomposition sees the same
-numbers your Table 1 does.
-"""
 
 import argparse
 import glob
@@ -74,10 +57,7 @@ def check(path: str) -> list[str]:
 
 
 def from_parquet(src: str, out: str) -> None:
-    """
-    Adapt this to your own layout. Expects one parquet per (dataset, model) with
-    columns: series_id, step, target, and q0.1 ... q0.9.
-    """
+
     import pandas as pd
 
     os.makedirs(out, exist_ok=True)
