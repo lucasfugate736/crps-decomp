@@ -1,16 +1,4 @@
 #!/usr/bin/env python3
-"""
-Subsample stability: does the headline pairwise conclusion survive resampling?
-
-The reviewer's sharpest empirical demand. If the TimesFM/Chronos-Bolt DSC
-contrast of -0.001 has a seed-to-seed SD of 0.03, it cannot be presented as a
-meaningful number, and you want to find that out yourself.
-
-    python stability.py --data forecasts --dataset m4_weekly \\
-        --a timesfm --b chronos_bolt
-
-Median order only, so this is fast: roughly 20 min for the default sweep.
-"""
 
 import argparse
 
