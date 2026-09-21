@@ -1,21 +1,4 @@
 #!/usr/bin/env python3
-"""
-Export the cases analyze.py decomposes into the format rerun_experiments.py
-wants, so the stochastic-order check, cross-fitting and bootstrap intervals are
-computed on exactly the same data as Table 1.
-
-    python export_for_rerun.py --out ~/crps/forecasts
-
-Applies, in order, the same operations analyze.py does:
-  1. subtract each window's last observed value   (level removal)
-  2. divide forecast and target by the MASE scale
-  3. drop non-finite cases
-  4. subsample with the SAME rule and seed as crpsdecomp.decompose_crps
-     (default_rng(0).choice, then sorted), so the case set is identical
-
-Also emits `series` (the GIFT-Eval item id) and `step` (horizon index), which
-analyze.py does not need but the block bootstrap and horizon splits do.
-"""
 
 import argparse
 import json
