@@ -1,27 +1,4 @@
 #!/usr/bin/env python3
-"""
-Runs the three re-analyses the review asks for, over your existing forecast files.
-
-    python rerun_experiments.py --data forecasts/ --out results/
-
-Expected input: one .npz per (dataset, model), named  <dataset>__<model>.npz, with
-
-    fc     float (n, 9)  quantile forecasts, levels 0.1 ... 0.9, ascending
-    y      float (n,)    realised targets
-    series int   (n,)    series (or window) id -- the bootstrap block
-    step   int   (n,)    horizon step, 1-based, for the horizon split
-
-These must be the LEVEL-REMOVED, MASE-scaled values you already score, and the
-IDR fit is done per dataset (never pooled across datasets: forecasts on
-different scales are not meaningfully comparable under the stochastic order,
-and Arnold et al. state no condition licensing such pooling).
-
-Outputs results/decomposition.csv with, for every (dataset, model):
-  * in-sample decomposition under the median total order   [what the draft reports]
-  * in-sample decomposition under the exact stochastic order [E2 guarantee holds]
-  * 5-fold cross-fitted decomposition                      [removes the floor]
-  * 95% block-bootstrap intervals over series              [replaces "identical"]
-"""
 
 import argparse
 import csv
