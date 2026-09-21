@@ -1,17 +1,4 @@
 #!/usr/bin/env python3
-"""
-Paired bootstrap of the DSC (or MCB) DIFFERENCE between two models.
-
-Overlapping marginal intervals are weak evidence of no difference: both models
-are scored on the same series, so the difference is far better determined than
-either level. Resampling the same series for both models and bootstrapping the
-difference gives the interval that actually answers "is this gap noise?".
-
-    python paired_bootstrap.py --data forecasts --dataset m4_weekly \\
-        --a timesfm --b chronos_bolt
-
-Takes a few seconds: the IDR fit is made once per model and held fixed.
-"""
 
 import argparse
 
